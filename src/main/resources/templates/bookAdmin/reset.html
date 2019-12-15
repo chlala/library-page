@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <style>
+        table tr th{
+            width: 100px;
+        }
+    </style>
+    <script>
+        $(function () {
+            $("#btn1").click(btn1Click);
+            $("#btn2").click(btn2Click);
+            $("#user").css("display","none");
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+
+        var token;
+        function btn1Click() {
+            no = $("#no").val();
+            $.ajax({
+                url: "http://localhost:8080/bookAdmin/checkUser?no="+no,
+                type:"get",
+                headers: {
+                    "authorize":token
+                },
+                success:checkCallBack,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function checkCallBack(data) {
+            console.log(data);
+            if(data.flag===false){
+                $("#user").css("display","none");
+                alert(data.message);
+            } else {
+                showUser(data);
+            }
+        }
+
+        function showUser(data) {
+            $("#user").css("display","block");
+            $("#name").html(data.data.name);
+            $("#non").html(data.data.no);
+            var role=data.map.role;
+            if(role===1){
+                $("#role").html("教师");
+            } else if(role===2){
+                $("#role").html("专科生");
+            } else if(role===3){
+                $("#role").html("本科生");
+            } else if(role===4){
+                $("#role").html("硕士");
+            } else {
+                $("#role").html("博士");
+            }
+        }
+
+        function btn2Click() {
+            $.ajax({
+                url: "http://localhost:8080/bookAdmin/reset?no="+no,
+                type:"post",
+                headers: {
+                    "authorize":token
+                },
+                data:null,
+                success:function (data) {
+                    alert(data.message);
+                },
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+    </script>
+</head>
+<body>
+<h2>重置密码</h2>
+<input placeholder="请输入借书证号" id="no">
+<input type="button" value="确定" id="btn1">
+<br/> <br/>
+<div id="user">
+    <h3>用户信息</h3>
+    <table id="table">
+        <tr>
+            <th>借书证号</th>
+            <td id="non"></td>
+        </tr>
+        <tr>
+            <th>姓名</th>
+            <td id="name"></td>
+        </tr>
+        <tr>
+            <th>身份</th>
+            <td id="role"></td>
+        </tr>
+    </table>
+    <input type="button" value="重置密码" id="btn2">
+</div>
+</body>
+</html>

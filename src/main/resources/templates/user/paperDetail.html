@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <style>
+        body{
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        table{
+            width: 500px;
+            height: 30px;
+            margin: auto;
+        }
+    </style>
+    <script>
+        $(function () {
+            var bookId=init();
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+            getDetail(bookId);
+        });
+
+        var token;
+        function init() {
+            var search=window.location.search;
+            var index=search.indexOf("?");
+            var bookId=unescape(search.substring(index+1).split("=")[1]);
+            bookId=bookId.substring(1,bookId.length-1);
+            bookId=Number(bookId);
+            return bookId;
+        }
+
+        function getDetail(bookId) {
+            $.ajax({
+                url: "http://localhost:8080/searchBook/paperDetail/"+bookId,
+                type:"get",
+                headers: {
+                    "authorize":token
+                },
+                success:callBack,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function callBack(data) {
+            console.log(data);
+            if(data.flag==false){
+                alert(data.message);
+            } else {
+                $("#bookName").html(data.data.bookName);
+                $("#author").html(data.data.author);
+                $("#kindNum").html(data.data.kindNum);
+                $("#date").html(data.data.date.substring(0,10));
+                var items=data.data.items;
+                fillItem(items);
+            }
+        }
+
+        function fillItem(items) {
+            for (var i=0;i<items.length;i++){
+                var table = document.getElementById("items");
+                var row = table.insertRow(table.rows.length);
+                var cell0=row.insertCell(0);
+                var cell1=row.insertCell(1);
+                var cell2=row.insertCell(2);
+                var cell3=row.insertCell(3);
+                cell0.innerHTML=items[i].id;
+                var flag=true;
+                if(items[i].shouldReturnTime!=null){
+                    cell1.innerHTML=items[i].shouldReturnTime.substring(0,10);
+                    flag=false;
+                }
+                if(items[i].location===1){
+                    cell2.innerHTML="南湖";
+                } else if(items[i].location===2){
+                    cell2.innerHTML="西院";
+                } else {
+                    cell2.innerHTML="东院";
+                }
+                cell3.innerHTML="<a href='#' onclick='order("+items[i].id+","+flag+")'>预约</a>"
+            }
+        }
+
+        function order(bookId,flag) {
+            if(flag){
+                alert("该书在馆，请直接借阅");
+            } else {
+                var cookies = document.cookie.split(";");
+                var no;
+                for (var i=0;i<cookies.length;i++) {
+                    if (cookies[i].indexOf("id=") >= 0) {
+                        no = cookies[i].split("=")[1];
+                        break;
+                    }
+                }
+                $.ajax({
+                    url: "http://localhost:8080/user/orderPaper?biId="+bookId+"&no="+no,
+                    type:"post",
+                    data:null,
+                    headers: {
+                        "authorize":token
+                    },
+                    success:callBack,
+                    error:function () {
+                        alert("系统错误，请联系管理员");
+                    }
+                });
+            }
+
+            function callBack(data) {
+                console.log(data);
+                if(data.flag===false){
+                    alert(data.message);
+                    if(data.message==="请先绑定邮箱"){
+                        window.location.href="/user/email";
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <br/><br/>
+    <table id="book">
+        <tr>
+            <th style="width: 50px">书名</th>
+            <td id="bookName"></td>
+        </tr>
+        <tr>
+            <th>作者</th>
+            <td id="author"></td>
+        </tr>
+        <tr>
+            <th>分类号</th>
+            <td id="kindNum"></td>
+        </tr>
+        <tr>
+            <th>时间</th>
+            <td id="date"></td>
+        </tr>
+    </table>
+    <br/>
+    <h3>馆藏信息</h3>
+    <table id="items" border="1">
+        <tr>
+            <th>书籍编号</th>
+            <th>应该归还时间</th>
+            <th>所在馆</th>
+            <th>操作</th>
+        </tr>
+    </table>
+</body>
+</html>

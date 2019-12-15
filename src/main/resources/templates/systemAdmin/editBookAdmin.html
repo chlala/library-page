@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <script>
+        $(function () {
+            $("#btn").click(btnClick);
+            $("#show").click(show);
+            $("#update").css("display","none");
+            init();
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+
+        var token;
+        function init() {
+            var search=window.location.search;
+            var values = search.substring(1).split("&");
+            id=unescape(values[0].split("=")[1]);
+            var name=unescape(values[2].split("=")[1]);
+            locate=unescape(values[1].split("=")[1]);
+            $("#name").html(name);
+            $("#location").html(locate);
+        }
+
+        function show() {
+            $("#update").css("display","block");
+        }
+
+        function btnClick() {
+            var location=$("select option:selected").text();
+            if(location.trim()===locate){
+                alert("位置还是一样的哦");
+                return false;
+            }
+            var data={
+                "id":id,
+                "location":$("#select").get(0).selectedIndex+1
+            };
+            $.ajax({
+                url:"http://localhost:8080/systemAdmin/updateBookAdmin",
+                contentType:"application/json;charset=UTF-8",
+                data:JSON.stringify(data),
+                dataType:"json",
+                type:"put",
+                headers: {
+                    "authorize":token
+                },
+                error:function () {
+                    alert("系统错误，请联系管理员")
+                },
+                success:callBack
+            });
+        }
+
+        function callBack(data) {
+            alert(data.message);
+        }
+    </script>
+</head>
+<body>
+    <h2>修改图书管理员</h2>
+    <table id="table">
+        <tr>
+            <th>姓名:</th>
+            <td id="name"></td>
+        </tr>
+        <tr>
+            <th>位置:</th>
+            <td id="location"></td>
+            <td><input type="button" value="修改位置" id="show"></td>
+        </tr>
+    </table>
+    <br/>
+    <div id="update">
+        <select id="select">
+            <option>南湖</option>
+            <option>西院</option>
+            <option>东院</option>
+        </select>
+        <input type="button" value="确定" id="btn">
+    </div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <style>
+        table th{
+            width: 150px;
+        }
+    </style>
+    <script>
+        $(function () {
+           $("#userBtn").click(userClick);
+           $("#info").css("display","none");
+           $("#searchBtn").click(searchClick);
+           var index=document.cookie.indexOf("location");
+           locate=document.cookie.substring(index+"location".length+1,index+"location".length+2);
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+
+        var token;
+        var role;
+        var no;
+        var borrowNum;
+        var leftBorrowNum;
+        var locate;
+
+        function userClick() {
+            userExists();
+        }
+
+        function userExists() {
+            var url="http://localhost:8080/bookAdmin/findUser?name="+$("#name").val();
+            $.ajax({
+                url: url,
+                type:"get",
+                headers: {
+                    "authorize":token
+                },
+                success:userCallback,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function userCallback(data) {
+            console.log(data);
+            if(data.flag===false){
+                $("#info").css("display","none");
+                alert(data.message);
+            } else {
+                $("#info").css("display","block");
+                showUserInfo(data.data)
+            }
+        }
+
+        function showUserInfo(data) {
+            $("#no").html(data.no);
+            $("#uname").html(data.name);
+            var sid=data.borrowStrategy.userType;
+            no=data.no;
+            role=sid;
+            var type;
+            if(sid===1){
+                type="教师";
+            } else if(sid===2){
+                type="专科生";
+            } else if(sid===3){
+                type="本科生";
+            } else if(sid===4){
+                type="硕士";
+            } else{
+                type="博士";
+            }
+            $("#type").html(type);
+            borrowNum=data.borrowNum;
+            leftBorrowNum=data.borrowStrategy.maxBorrowNum-data.borrowNum;
+            $("#borrowNum").html(data.borrowNum);
+            $("#leftBorrowNum").html(data.borrowStrategy.maxBorrowNum-data.borrowNum);
+        }
+
+        function searchClick() {
+            var biId=$("#id").val();
+            var searchKind=$("#kind").get(0).selectedIndex;
+            var url;
+            if(searchKind===0){
+                url="http://localhost:8080/bookAdmin/borrowOrdinaryBook";
+            } else if(searchKind===1){
+                url="http://localhost:8080/bookAdmin/borrowMagazine";
+            } else {
+                url="http://localhost:8080/bookAdmin/borrowPaper";
+            }
+            url+="?no="+no+"&role="+role+"&biId="+biId+"&location="+locate;
+            borrow(url);
+        }
+
+        function borrow(url) {
+            $.ajax({
+                url:url,
+                contentType:"application/json;charset=UTF-8",
+                data:null,
+                dataType:"json",
+                type:"post",
+                headers: {
+                    "authorize":token
+                },
+                error:function () {
+                    alert("系统错误，请联系管理员")
+                },
+                success:callBack
+            });
+        }
+
+        function callBack(data) {
+            alert(data.message);
+            if(data.flag===true){
+                $("#borrowNum").html(++borrowNum);
+                $("#leftBorrowNum").html(--leftBorrowNum);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>借书</h1>
+    <input placeholder="输入借书证号" id="name">
+    <input type="button" id="userBtn" value="确定">
+    <br/><br/>
+    <div id="info">
+        <h2>用户信息</h2>
+        <table>
+            <tr>
+                <th>借书证号</th>
+                <td id="no"></td>
+            </tr>
+            <tr>
+                <th>姓名</th>
+                <td id="uname"></td>
+            </tr>
+            <tr>
+                <th>身份</th>
+                <td id="type"></td>
+            </tr>
+            <tr>
+                <th>已借书数量</th>
+                <td id="borrowNum"></td>
+            </tr>
+            <tr>
+                <th>剩余可借书数量</th>
+                <td id="leftBorrowNum"></td>
+            </tr>
+
+        </table>
+        <br/>
+        <select id="kind">
+            <option>中外文图书</option>
+            <option>杂志</option>
+            <option>论文</option>
+        </select>
+        <input id="id" placeholder="输入书籍的编号">
+        <input type="button" value="借阅" id="searchBtn">
+    </div>
+</body>
+</html>

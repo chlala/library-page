@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <script>
+
+        $(function () {
+            $("#submit").click(add);
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+        var token;
+        function add() {
+            var data = $("#form").serializeArray();
+            var jsonData={};
+            for (var i=0;i<data.length;i++){
+               jsonData[data[i].name]=data[i].value;
+            }
+            var flag = check(data);
+            if(!flag){
+                return false;
+            }
+            var v1=$("#1").val();
+            var v2=$("#2").val();
+            var v3=$("#3").val();
+            var url="http://localhost:8080/bookAdmin/addOrdinaryBook";
+            $.ajax({
+                url:url+"?role=bookAdmin&l1="+v1+"&l2="+v2+"&l3="+v3,
+                contentType:"application/json;charset=UTF-8",
+                data:JSON.stringify(jsonData),
+                dataType:"json",
+                type:"post",
+                headers: {
+                    "authorize":token
+                },
+                error:function () {
+                    alert("系统错误，请联系管理员")
+                },
+                success:callBack
+            });
+        }
+
+        function callBack(data) {
+            console.log(data);
+            if(data["flag"]==true){
+                alert(data["message"]);
+            } else {
+                alert(data["message"]);
+            }
+        }
+
+        function check(data) {
+            for (var i=0;i<data.length;i++){
+                if(data[i].value==null||data[i].value==""){
+                    alert("每一项都不能为空!")
+                    return false;
+                }
+            }
+            var v1=$("#1").val();
+            var v2=$("#2").val();
+            var v3=$("#3").val();
+            var count=$("#count").val();
+            if(Number(v1)+Number(v2)+Number(v3)!==Number(count)){
+                alert("书籍分配不对!");
+                return false;
+            }
+            return true;
+        }
+    </script>
+</head>
+<body>
+    <form id="form">
+        <table style="text-align: center">
+            <tr>
+                <th>书名</th>
+                <td><input name="bookName"></td>
+            </tr>
+            <tr>
+                <th>作者</th>
+                <td><input name="author"></td>
+            </tr>
+            <tr>
+                <th>出版社</th>
+                <td><input name="press"></td>
+            </tr>
+            <tr>
+                <th>出版日期</th>
+                <td><input type="date" name="publishTime"></td>
+            </tr>
+            <tr>
+                <th>价格</th>
+                <td><input name="price"></td>
+            </tr>
+            <tr>
+                <th>索书号</th>
+                <td><input name="callNumber"></td>
+            </tr>
+            <tr>
+                <th>数量</th>
+                <td><input name="count" id="count"></td>
+            </tr>
+            <tr>
+                <th>描述</th>
+                <td><textarea name="description" style="height: 80px"></textarea></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    南湖:
+                    <select id="1">
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                    &nbsp;&nbsp;西院:
+                    <select id="2">
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                    &nbsp;东院:
+                    <select id="3">
+                        <option>0</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                    <br/>
+                </td>
+            </tr>
+            <tr>
+                <td><input type="button" value="添加" id="submit"></td>
+                <td><input type="button" value="取消" id="cancel"></td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>

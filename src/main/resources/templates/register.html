@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <script>
+        $(function () {
+            $("#cancel").click(cancel);
+            $("#register").click(register);
+        });
+
+        function cancel() {
+            window.location.href="/";
+        }
+
+        function register() {
+            var flag=check();
+            if(!flag){
+                return false;
+            }
+            var option=$("#select").get(0).selectedIndex;
+            var no=$("#no").val();
+            var name=$("#name").val();
+            var pwd=$("#pwd").val();
+            var data={
+                "no":no,
+                "name":name,
+                "password":pwd
+            };
+            if(option===1){
+                option="teacher";
+            } else if(option===2){
+                option="junior";
+            }else if(option===3){
+                option="bachelor";
+            }else if(option===4){
+                option="master";
+            }else if(option===5){
+                option="doctor";
+            }
+            $.ajax({
+                url:"http://localhost:8080/user/register?role="+option,
+                contentType:"application/json;charset=UTF-8",
+                data:JSON.stringify(data),
+                dataType:"json",
+                type:"post",
+                success:callBack,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function callBack(data) {
+            if(data["flag"]===true){
+                alert(data["message"]);
+                window.location.href="/";
+            } else {
+                alert(data["message"]);
+            }
+        }
+
+        function check() {
+            var no=$("#no").val();
+            var name=$("#name").val();
+            var pwd=$("#pwd").val();
+
+            if(no==null||no==""||name==null||name==""||pwd==null||pwd==""){
+                alert("卡号 姓名 密码不能为空");
+                return false;
+            }
+            var index=$("#select").get(0).selectedIndex;
+            if(index==0){
+                alert("请选择身份!");
+                return false;
+            }
+            return true;
+        }
+    </script>
+</head>
+<body>
+    <h2>注册账号</h2>
+    <form>
+        校园卡号:&nbsp;&nbsp;<input id="no"><br/><br/>
+        姓名:&nbsp;&nbsp;<input id="name"><br/><br/>
+        密码:&nbsp;&nbsp;<input type="password" id="pwd"><br/><br/>
+        身份:&nbsp;&nbsp;
+        <select id="select">
+            <option>-----</option>
+            <option>老师</option>
+            <option>专科生</option>
+            <option>本科生</option>
+            <option>硕士</option>
+            <option>博士</option>
+        </select><br/><br/>
+        <input type="button" value="注册" id="register">&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="button" value="取消" id="cancel">
+    </form>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <script>
+        $(function () {
+            $("#btn").click(btnClick);
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+        var token;
+
+        function btnClick() {
+            var name=$("#name").val();
+            if(name==null||name===""){
+                alert("姓名不能为空");
+                return false;
+            }
+            var data={
+                "name":name,
+                "location":$("#select").get(0).selectedIndex+1
+            };
+            $.ajax({
+                url:"http://localhost:8080/systemAdmin/addBookAdmin",
+                contentType:"application/json;charset=UTF-8",
+                data:JSON.stringify(data),
+                dataType:"json",
+                type:"post",
+                headers: {
+                    "authorize":token
+                },
+                error:function () {
+                    alert("系统错误，请联系管理员")
+                },
+                success:callBack
+            });
+        }
+
+        function callBack(data) {
+            alert(data.message);
+        }
+    </script>
+</head>
+<body>
+    <h2>添加图书管理员</h2>
+    姓名:<input id="name">
+    <br/>
+    位置:
+    <select id="select">
+        <option>南湖</option>
+        <option>西院</option>
+        <option>东院</option>
+    </select>
+    <br/>
+    <input type="button" value="确定" id="btn">
+</body>
+</html>

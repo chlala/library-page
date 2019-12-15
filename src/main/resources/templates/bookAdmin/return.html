@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <style>
+        table td{
+            text-align: center;
+        }
+        table #bookName{
+            width: 250px;
+        }
+        table #author{
+            width: 150px;
+        }
+        table td{
+            width: 130px;
+        }
+    </style>
+    <script>
+        $(function () {
+           $("#bookCheck").click(returnBook);
+           var index=document.cookie.indexOf("location");
+           locate=document.cookie.substring(index+"location".length+1,index+"location".length+2);
+           $("#content").css("display","none");
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+
+        var biId;
+        var bookType;
+        var token;
+
+        function returnBook() {
+            clearTable();
+            biId=$("#biId").val();
+            var searchKind=$("#kind").get(0).selectedIndex;
+            bookType=searchKind+1;
+            var url="http://localhost:8080/bookAdmin/checkBook?biId="+biId+"&bookType="+bookType+"&location="+locate;
+            $.ajax({
+                url: url,
+                type:"get",
+                headers: {
+                    "authorize":token
+                },
+                success:bookCallBack,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function bookCallBack(data) {
+            if(data.flag===true){
+                $.ajax({
+                    url:"http://localhost:8080/bookAdmin/returnBook?biId="+biId+"&bookType="+bookType,
+                    contentType:"application/json;charset=UTF-8",
+                    data:null,
+                    dataType:"json",
+                    type:"post",
+                    headers: {
+                        "authorize":token
+                    },
+                    error:function () {
+                        alert("系统错误，请联系管理员")
+                    },
+                    success:callBack
+                });
+            } else {
+                $("#content").css("display","none");
+                alert(data.message);
+            }
+        }
+
+        function callBack(data) {
+            console.log(data);
+            alert(data.message);
+            $("#no").html(data.data);
+            if (data.flag===true) {
+                $.ajax({
+                    url: "http://localhost:8080/user/nowBorrowRecord?no="+data.data,
+                    type:"get",
+                    headers: {
+                        "authorize":token
+                    },
+                    success:showBorrow,
+                    error:function () {
+                        alert("系统错误，请联系管理员");
+                    }
+                });
+            }
+        }
+
+        function showBorrow(data) {
+            console.log(data);
+            if(data.flag===true){
+                $("#content").css("display","block");
+                var table = document.getElementById("table");
+                var date=new Date();
+                for (var i=0;i<data.data.length;i++){
+                    var type;
+                    if(data.data[i].type===1){
+                        type="中外文图书";
+                    } else if(data.data[i].type===2){
+                        type="杂志";
+                    } else {
+                        type="论文";
+                    }
+                    addRow(table,data.data[i],i,type,date);
+                }
+            } else {
+                $("#content").css("display","none");
+            }
+        }
+
+        function addRow(table,record,i,type,date) {
+            var row = table.insertRow(table.rows.length);
+            var cell0=row.insertCell(0);
+            var cell1=row.insertCell(1);
+            var cell2=row.insertCell(2);
+            var cell3=row.insertCell(3);
+            var cell4=row.insertCell(4);
+            var cell5=row.insertCell(5);
+            var cell6=row.insertCell(6);
+            cell0.innerHTML=i+1;
+            cell1.innerHTML=record.book.bookName;
+            cell2.innerHTML=record.book.author;
+            cell3.innerHTML=type;
+            cell4.innerHTML=record.borrowDate.substring(0,10);
+            cell5.innerHTML=record.shouldReturnTime.substring(0,10);
+            var day=parseInt((new Date(record.shouldReturnTime.substring(0,10))-date)/(1000 * 60 * 60 * 24));
+            if(day<0){
+                cell6.innerHTML="已过期";
+            } else if(day<=3){
+                cell6.innerHTML="即将到期";
+            } else {
+                cell6.innerHTML="正常";
+            }
+        }
+        function clearTable() {
+            var tb = document.getElementById("table");
+            var rowNum=tb.rows.length;
+            for (var i=1;i<rowNum;i++)
+            {
+                tb.deleteRow(i);
+                rowNum=rowNum-1;
+                i=i-1;
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <h2>还书</h2>
+    <select id="kind">
+        <option>中外文图书</option>
+        <option>杂志</option>
+        <option>论文</option>
+    </select>
+    <input id="biId" placeholder="输入书籍编号">
+    <input type="button" value="还书" id="bookCheck">
+    <br/>
+    <div id="content">
+        借书证号:<div id="no"></div>
+        <h3>借书记录</h3>
+        <table id="table">
+            <tr>
+                <th>序号</th>
+                <th id="bookName">书名</th>
+                <th id="author">作者</th>
+                <th>类型</th>
+                <th>借书时间</th>
+                <th>应该归还时间</th>
+                <th>状态</th>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>

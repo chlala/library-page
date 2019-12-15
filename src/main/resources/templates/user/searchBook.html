@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的图书馆</title>
+    <script src="/js/jquery-3.4.1.js"></script>
+    <style>
+        body{
+            text-align: center;
+        }
+        #table{
+            font-size: 15px;
+            font-family: 隶书,serif;
+            color: rebeccapurple;
+        }
+        #table td{
+            height: 40px;
+        }
+        a{
+            text-decoration: none;
+            color: rebeccapurple;
+        }
+
+    </style>
+    <script>
+        $(function () {
+            $("#btn").click(search);
+            $("#first").click(first);
+            $("#end").click(last);
+            $("#pre").click(pre);
+            $("#next").click(next);
+            $("#content").css("display","none");
+            var cookies = document.cookie.split(";");
+            for (var i=0;i<cookies.length;i++) {
+                if (cookies[i].indexOf("token=") >= 0) {
+                    token = cookies[i].split("=")[1];
+                    break;
+                }
+            }
+        });
+        var token;
+        var baseUrl;
+        var nowPage=1;
+        var prePage;
+        var nextPage;
+        var pagesNum;
+        var size=10;
+        var type;
+
+        function search() {
+            clearTable();
+            var input = $("#input").val();
+            if(input==null||input.trim()===""){
+                alert("输入内容再查询哦!");
+                clearTable();
+                $("#content").css("display","none");
+                return false;
+            }
+            input=input.trim();
+            var searchKind=$("#searchKind").get(0).selectedIndex;
+            var bookKind=$("#bookKind").get(0).selectedIndex;
+            if(bookKind===0){
+                if(searchKind===0){
+                     baseUrl="http://localhost:8080/searchBook/searchOrdinaryBookByBookName?bookName="+input;
+                } else {
+                     baseUrl="http://localhost:8080/searchBook/searchOrdinaryBookByAuthor?author="+input;
+                }
+                type="ordinaryBookDetail";
+            } else if(bookKind===1){
+                if(searchKind===0){
+                    baseUrl="http://localhost:8080/searchBook/searchMagazineByBookName?bookName="+input;
+                } else {
+                    baseUrl="http://localhost:8080/searchBook/searchMagazineByAuthor?author="+input;
+                }
+                type="magazineDetail";
+            }  else {
+                if(searchKind===0){
+                     baseUrl="http://localhost:8080/searchBook/searchPaperByBookName?bookName="+input;
+                } else {
+                     baseUrl="http://localhost:8080/searchBook/searchPaperByAuthor?author="+input;
+                }
+                type="paperDetail";
+            }
+            send(baseUrl+"&start=1&size="+size);
+        }
+
+        function send(url) {
+            $.ajax({
+                url: url,
+                type:"get",
+                headers: {
+                    "authorize":token
+                },
+                success:callBack,
+                error:function () {
+                    alert("系统错误，请联系管理员");
+                }
+            });
+        }
+
+        function callBack(data) {
+            console.log(data);
+            clearTable();
+            if(data.flag===false){
+                alert(data.message);
+                $("#content").css("display","none");
+            } else {
+                $("#content").css("display","block");
+                var count=data.data.size;
+                var list=data.data.list;
+                pageCheck(data.data);
+                show();
+                var no=1;
+                for (var i=0;i<count;i++){
+                    addRow(no,list[i].id,list[i].bookName,list[i].author,list[i].count,list[i].inCount);
+                    no++;
+                }
+            }
+        }
+        function addRow(no,id,bookName,author,count,inCount) {
+            var table = document.getElementById("table");
+            var row = table.insertRow(table.rows.length);
+            var cell0=row.insertCell(0);
+            var cell1=row.insertCell(1);
+            var cell2=row.insertCell(2);
+            var cell3=row.insertCell(3);
+            cell0.innerHTML=(nowPage-1)*10+no;
+            cell1.innerHTML="<a href=\""+type+"?bookId='"+id+"'\">"+bookName+"</a>";
+            cell2.innerHTML=author;
+            cell3.innerHTML=inCount+"/"+count;
+        }
+
+        function clearTable() {
+            var tb = document.getElementById("table");
+            var rowNum=tb.rows.length;
+            for (var i=1;i<rowNum;i++)
+            {
+                tb.deleteRow(i);
+                rowNum=rowNum-1;
+                i=i-1;
+            }
+        }
+
+        function pageCheck(pageInfo) {
+            pagesNum=pageInfo.pages;
+            if(pageInfo.isFirstPage===true){
+                $("#first").attr("disabled","true");
+            } else {
+                $("#first").removeAttr("disabled");
+            }
+            if(pageInfo.isLastPage===true){
+                $("#end").attr("disabled","true");
+            } else {
+                $("#end").removeAttr("disabled");
+            }
+            if(pageInfo.hasNextPage===true){
+                nowPage=pageInfo.nextPage-1;
+                nextPage=pageInfo.nextPage;
+                $("#next").removeAttr("disabled");
+            } else {
+                nowPage=pagesNum;
+                $("#next").attr("disabled","true");
+            }
+            if(pageInfo.hasPreviousPage===true){
+                prePage=pageInfo.prePage;
+                $("#pre").removeAttr("disabled");
+            } else {
+                $("#pre").attr("disabled","true");
+            }
+        }
+
+        function first() {
+            send(baseUrl+"&start=1&size="+size);
+        }
+        
+        function last() {
+            send(baseUrl+"&start="+pagesNum+"&size="+size);
+        }
+
+        function pre() {
+            send(baseUrl+"&start="+prePage+"&size="+size);
+        }
+
+        function next() {
+            send(baseUrl+"&start="+nextPage+"&size="+size);
+        }
+
+        function show() {
+            $("#nowPage").html(nowPage);
+            $("#pageCount").html(pagesNum);
+        }
+    </script>
+</head>
+<body>
+    <h2>查找图书</h2>
+    <select id="bookKind">
+        <option>中外文图书</option>
+        <option>杂志</option>
+        <option>论文</option>
+    </select>
+    <select id="searchKind">
+        <option>按书名</option>
+        <option>按作者</option>
+    </select>
+    <input id="input">
+    <input type="button" id="btn" value="搜索">
+    <br/><br/>
+    <div id="content">
+        <table id="table" align="center">
+            <tr>
+                <th>编号</th>
+                <th>书名</th>
+                <th>作者</th>
+                <th>在馆/馆藏</th>
+            </tr>
+        </table>
+        <br/><br/>
+        <div id="bottom">
+            共&nbsp;<span id="pageCount">--</span>&nbsp;页&nbsp;&nbsp;
+            <button id="first">首页</button>&nbsp;&nbsp;
+            <button id="pre">上一页</button>&nbsp;&nbsp;
+            当前第&nbsp;<span id="nowPage">--</span>&nbsp;页&nbsp;&nbsp;
+            <button id="next">下一页</button>&nbsp;&nbsp;
+            <button id="end">尾页</button>
+        </div>
+    </div>
+
+</body>
+</html>
